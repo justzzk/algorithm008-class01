@@ -641,7 +641,7 @@
 
 1. [面试题05. 替换空格](https://leetcode-cn.com/problems/ti-huan-kong-ge-lcof/)
 
-- 遍历替换即可
+- 历替换即可
 
 2. [面试题06. 从尾到头打印链表](https://leetcode-cn.com/problems/cong-wei-dao-tou-da-yin-lian-biao-lcof/)
 - 碰到逆序用stack,2,57.73;  40,100
@@ -1208,6 +1208,258 @@
       }
   }
   ```
+  
+
+
+
+#### 2.9 5-5
+
+1. [433. 最小基因变化](https://leetcode-cn.com/problems/minimum-genetic-mutation/)
+- 自己的想法是直观的，找出start和end的差异index，先变其中一个，具体是哪个要从头遍历，找到变了一个之后存在于bank中的，进入下一层递归，再找一位进行变化，直到start与end相同，更新minstep。不过这种方法在改变start等会有一些麻烦；贴一下没有完成的代码
+
+  ```java
+  class Solution {
+      private int minstep=-1;
+      public int minMutation(String start, String end, String[] bank) {
+          if(start.length()!=end.length()){
+              return -1;
+          }
+          HashSet<String> set=new HashSet<>(bank);
+          HashMap<Integer,Boolean> map=new HashMap<>();
+          for(int i=0;i<start.length;i++){
+              if(start.charAt(i)!=end.charAt(i)){
+                  map.put(i,false);
+              }
+          }
+          mutation(bank,start,end,0,map);
+          return minstep;
+      }
+  
+      private void mutation(HashSet<String> bank,
+                            String start,
+                            String end,
+                            int steps,
+                            HashMap<Integer,Boolean> map){
+          if(start.equals(end)){
+              minstep=Math.min(minstep,steps);
+              return;
+          }
+          for(int key:map.keySet()){
+              //获取还没有改变的index，false表示还没有改变
+              if(!map.get(key)){
+                  if(set.contains())
+              }
+          }
+      }
+  }
+  ```
+
+  
+
+- 另一个思路，既然变化的每一步和end都在bank中，那直接从start开始每次递归寻找只相差一位的那个string作为下一个的start，看最后找到的那个与end是否相同即可；
+
+  ```java
+  class Solution{
+      private int minstep=Integer.MAX_VALUE;
+      public int minMutation(String start, String end, String[] bank) {
+          if(start.length()!=end.length()) return -1;
+          HashSet<String> set=new HashSet<>();
+          mutation(start,end,bank,set,0);
+          return minstep==Integer.MAX_VALUE?-1:minstep;
+      }
+  
+      private void mutation(String start, 
+                            String end, 
+                            String[] bank,
+                            HashSet<String> set,
+                            int steps){
+          if(start.equals(end)){
+              minstep=Math.min(minstep,steps);
+              return;
+          }
+          for(String s:bank){
+              int diff=0;
+              //只遍历没遍历过的
+              if(!set.contains(s)){
+                  for(int i=0;i<s.length();i++){
+                      if(s.charAt(i)!=start.charAt(i)){
+                          diff++;
+                      }
+                  }
+                  //如果不同之处超过1处，查看下一个s
+                  if(diff!=1) continue;
+                  //找到不同之处只有一处的s,将其作为下一个start
+                  set.add(s);
+                  mutation(s,end,bank,set,steps+1);
+                  set.remove(s);
+              }
+          }
+      }
+  }
+  ```
+
+- 另一个思路，BFS，
+
+  ```java
+  //bfs，对当前string，用4种char遍历替换所有位，并查看visited和bankset，
+  //1，71.80；37.7，20
+  public class Solution {
+      public int minMutation(String start, String end, String[] bank) {
+          if(start.equals(end)) return 0;
+          
+          Set<String> bankSet = new HashSet<>();
+          for(String b: bank) bankSet.add(b);
+          
+          char[] charSet = new char[]{'A', 'C', 'G', 'T'};
+          
+          int level = 0;
+          Set<String> visited = new HashSet<>();
+          Queue<String> queue = new LinkedList<>();
+          queue.offer(start);
+          visited.add(start);
+          
+          while(!queue.isEmpty()) {
+              int size = queue.size();
+              while(size-- > 0) {
+                  String curr = queue.poll();
+                  if(curr.equals(end)) return level;
+                  
+                  char[] currArray = curr.toCharArray();
+                  for(int i = 0; i < currArray.length; i++) {
+                      char old = currArray[i];
+                      for(char c: charSet) {
+                          currArray[i] = c;
+                          String next = new String(currArray);
+                          if(!visited.contains(next) && bankSet.contains(next)) {
+                              visited.add(next);
+                              queue.offer(next);
+                          }
+                      }
+                      currArray[i] = old;
+                  }
+              }
+              level++;
+          }
+          return -1;
+      }
+  }		
+  ```
+  
+  
+  
+
+
+#### 2.10 5-6
+
+1. [983. 最低票价](https://leetcode-cn.com/problems/minimum-cost-for-tickets/)
+- 动态规划，从后往前迭代比较简单，但是有点难想；
+
+- 时间复杂度：O(N)O(N)，其中 NN 是出行日期的数量，我们需要计算 NN 个解，而计算每个解的过程中最多将指针挪动 3030 步，计算量为 O(30 * N)=O(N)O(30∗N)=O(N)。
+
+  空间复杂度：O(N)O(N)，我们需要长度为 O(N)O(N) 的数组来存储所有的解。
+
+  ```java
+  //1,97,72;  38.2,100
+  class Solution{
+  
+      private int[] days;
+      private int[] costs;
+      private Integer[] res;
+      private int[] duration=new int[]{1,7,30};
+  
+      //dp(i)表示从days[i]到最后一天的最少花费
+      public int mincostTickets(int[] days, int[] costs) {
+          this.days=days;
+          this.costs=costs;
+          res=new Integer[days.length];
+          return dp(0);
+      }
+  
+      private int dp(int index){
+          if(index>=days.length){
+              return 0;
+          }
+          if(res[index]!=null){
+              return res[index];
+          }
+          //开始循环找出res[index]
+          res[index]=Integer.MAX_VALUE;
+          int curindex=index;
+          //遍历3种可能
+          for(int i=0;i<3;i++){
+              //比如向前走duration[0]=1天，curindex=index+1，就求出这种走法，走到最后需要的花费dp(curindex)+costs[i]，
+            //for循环的3次，就得到了在当前index下，3种走法的最少花费，是3种走法之一；3种走法的curindex都不同，再分别加上对应的花费，就分别是这种走法走到最后的总花费
+              while(curindex<days.length && days[index]+duration[i]>days[curindex]){
+                  curindex++;
+              }
+              res[index]=Math.min(res[index],dp(curindex)+costs[i]);
+          }
+          return res[index];
+      }
+  }
+  ```
+
+- 典型的dp的做法，[从前往后](https://leetcode-cn.com/problems/minimum-cost-for-tickets/solution/xiong-mao-shua-ti-python3-dong-tai-gui-hua-yi-do-2/)，找出到第i天的所有3种方法的最小开销，即为到达最后一天的最小开销，所以从前向后依次得到第i天的最小开销，直到最后一天，妙,  1,97,72; 37.5,100
+
+  ```java
+  public int mincostTickets(int[] days, int[] costs) {
+          int len = days.length;
+          int[] dp = new int[days[len - 1] + 1];
+          int day_index = 0;
+          for (int i = 1; i < dp.length; i++) {
+              if (i == days[day_index]) {
+                  dp[i] = min(
+                          dp[Math.max(0, i - 1)] + costs[0],
+                          dp[Math.max(0, i - 7)] + costs[1],
+                          dp[Math.max(0, i - 30)] + costs[2]
+  
+                  );
+                  day_index++;
+              } else {
+                  dp[i] = dp[i - 1];
+              }
+          }
+          return dp[dp.length - 1];
+      }
+  
+      public int min(int a, int b, int c) {
+          return Math.min(a, Math.min(b, c));
+      }
+  ```
+
+  
+
+- 这个是从后往前，思路和上一个是完全相同的，上一个以0为起始点，值为0；这一个以最后一天为起始点，最后一天以后的值全为0；两个的区别只是索引，除此之外完全相同；
+
+  ```java
+  class Solution {
+      public int mincostTickets(int[] days, int[] costs) {
+          int len = days.length, maxDay = days[len - 1], minDay = days[0];
+          int[] dp = new int[maxDay + 31]; // 多扩几天，省得判断 365 的限制
+          // 只需看 maxDay -> minDay，此区间外都不需要出门，不会增加费用
+          for (int d = maxDay, i = len - 1; d >= minDay; d--) {
+              // i 表示 days 的索引
+              // 也可提前将所有 days 放入 Set，再通过 set.contains() 判断
+              if (d == days[i]) {
+                  dp[d] = Math.min(dp[d + 1] + costs[0], dp[d + 7] + costs[1]);
+                  dp[d] = Math.min(dp[d], dp[d + 30] + costs[2]);
+                  i--; // 别忘了递减一天
+              } else dp[d] = dp[d + 1]; // 不需要出门
+          }
+          return dp[minDay]; // 从后向前遍历，返回最前的 minDay
+      }
+  }
+  
+  作者：lzhlyle
+  链接：https://leetcode-cn.com/problems/minimum-cost-for-tickets/solution/java-dong-tai-gui-hua-si-lu-bu-zou-cong-hou-xiang-/
+  ```
+
+  
+
+2. [529. 扫雷游戏](https://leetcode-cn.com/problems/minesweeper/)
+
+- DFS，分为地雷、空白-数组、空白-空块3种情况，其中最后一种需要dfs
+
 ---
 
 ### 3. 作业算法题
