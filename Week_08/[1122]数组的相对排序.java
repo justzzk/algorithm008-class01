@@ -64,19 +64,51 @@
 //     }
 // }
 
+//重试上面的方法
+//4,31.33;   39.7,10
+class Solution{
+    public int[] relativeSortArray(int[] arr1,int[] arr2){
+        boolean[] twoHas=new boolean[1001];
+        for(int num:arr2) twoHas[num]=true;
+
+        HashMap<Integer,Integer> map=new HashMap<>();
+        PriorityQueue<Integer> pq=new PriorityQueue<>();
+        for(int num:arr1){
+            if(twoHas[num]){
+                map.put(num,map.getOrDefault(num,0)+1);
+            }else{
+                pq.add(num);
+            }
+        }
+
+        int i=0;
+        for(int num:arr2){
+            while( map.get(num)!=0 ){
+                arr1[i++]=num;
+                map.put(num,map.get(num)-1);
+            }
+        }
+
+        while(!pq.isEmpty()){
+            arr1[i++]=pq.poll();
+        }
+
+        return arr1;
+    }
+}
 
 //桶排序
 //可以使用这种方法的原因是arr[i]的取值范围不大
 //0,100;  39.8,10
-class Solution{
-    public int[] relativeSortArray(int[] arr1,int[] arr2){
-        int[] arr=new int[1001];
-        for(int num:arr1) arr[num]++;
-        int[] res=new int[arr1.length];
-        int index=0;
-        for(int num:arr2) while(arr[num]-->0) res[index++]=num;
-        for(int i=0;i<1001;i++) while(arr[i]-->0) res[index++]=i;
-        return res;
-    }
-}
+// class Solution{
+//     public int[] relativeSortArray(int[] arr1,int[] arr2){
+//         int[] arr=new int[1001];
+//         for(int num:arr1) arr[num]++;
+//         int[] res=new int[arr1.length];
+//         int index=0;
+//         for(int num:arr2) while(arr[num]-->0) res[index++]=num;
+//         for(int i=0;i<1001;i++) while(arr[i]-->0) res[index++]=i;
+//         return res;
+//     }
+// }
 //leetcode submit region end(Prohibit modification and deletion)
