@@ -567,6 +567,7 @@
   - 模板写法
 
     ```java
+    //这种写法虽然看起来是比较和合并一起进行，但实际上合并的时候还是重新遍历一遍，和先比较后合并时间上是差不多的
     class Solution{
         public int reversePairs(int[] nums){
             if(nums==null || nums.length==0) return 0;
@@ -604,6 +605,8 @@
                 cache[c++]=nums[j++];
             }
             //退出for的原因是nums[mid+1,right]走完了,只可能nums[left,mid]还有剩余
+            //因为while中是从每个nums[j]的角度统计了翻转对的数量，所以在退出while后就完成了所有翻转对的统计，所以这里写mid前的数据就没有翻转对了
+            //总的来说，无论从i还是j的角度，只要统计的方法对了，在下面这个while中就不需要再统计了
             while(t<=mid) cache[c++]=nums[t++];
     
             //将排序结果写会原数组
@@ -616,12 +619,61 @@
     
     ```
     
-    
+
+  PS：尝试了一下翻转对计数和合并可不可以同时进行，目前的看法是不可以同时完成的
+
+  ```java
+          // int i=left;
+          // int j=mid+1;
+          // int c=0;
+          // 同时比较与合并不可行
+          // 比如[1,2,3][1,3]
+          // 合并的过程，只要nums[i]>nums[j],就把后者如cache，比如2&1，但是2后面的就不会与1比较了
+          // 所以暂时认为二者无法同时进行
+          // 如果同时从最后开始遍历呢？
+          // while(i<=mid){
+          //     while(j<=right && nums[i]>nums[j]){
+          //         if(nums[i]>2*nums[j]){
+          //             count+=mid-i+1;
+          //         }
+          //         cache[c++]=nums[j++];
+          //     }
+          //     cache[c++]=nums[i++];
+          // }
+          // while(j<=right){
+          //     cache[c++]=nums[j++];
+          // }
+  
+          int i=mid;
+          int j=right;
+          int c=right-left;
+          // 比如[1,2,3][1,3] 通过
+          // [5,4,3,2,1]  出错
+          // [5,4,3] [2,1]
+          // [5,4][3][2][1]
+          // [3,4,5][1,2]最后填充时，也是3和4没有与1比较
+          // 这个原因也是只比较大小和比较2倍大小的区别，如果按照比较2倍的规则，4在不大于2的2倍时，应该把2入cache，但按照排序规则这是不会发生的；
+          // 不然就要在每个nums[i]时遍历一遍nums[j],但这样总的时间开销是大于两者分开进行的
+          while(j>=mid+1){
+              while(i>=left && nums[i]>nums[j]){
+                  if(nums[i]>2*nums[j]){
+                      count+=(j-mid);
+                  }
+                  cache[c--]=nums[i--];
+              }
+              cache[c--]=nums[j--];
+          }
+          while(i>=left){
+              cache[c--]=nums[i--];
+          }
+  ```
+
+  
 
 - 树状数组.  ==待解决==
 
 6. [面试题51. 数组中的逆序对](https://leetcode-cn.com/problems/shu-zu-zhong-de-ni-xu-dui-lcof/)
-- 和上面的题一模一样
+- 和上面的题一模一样，区别是这个题因为比较和合并的规则一样，所以可以同时完成；
 
   ```java
   

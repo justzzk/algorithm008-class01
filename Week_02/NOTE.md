@@ -1,5 +1,3 @@
-## 学习笔记 Week02
-
 
 
 ### 1. 基础知识
@@ -351,6 +349,13 @@ PS:返回空数组`return new int[0]`或者`return new int[]{};`
            }
            return 0;// Will never reach this line;
        }
+   
+                   //注意这里不能写else if
+                   // }else if(node.left!=null){
+                   //     queue.offer(node.left);
+                   // }else if(node.right!=null){
+                   //     queue.offer(node.right);
+                   // }
    ```
 
 3. 104-二叉树最大深度：DFS递归，找到最大深度,
@@ -411,7 +416,7 @@ PS:返回空数组`return new int[0]`或者`return new int[]{};`
 
 #### 2.7 04-26
 
-1. 23-合并k个排序链表. ==待熟悉==
+1. 23-合并k个排序链表. 
 - 依次比较k个链表的头节点，选出最小的接到res的next，将该节点所在链表的头节点后移；每轮都要比较k次，循环N次，所以时间复杂度`O(kN)`;这种方法会改变链表结构；
 
 - 使用PriorityQueue，先存入k个节点作为初始化，之后每次循环poll与offer，直到队列空；每轮选出最小的时间复杂度logk，所以时间复杂度`O(Nlogk)`，这种方法不会改变链表结构但是需要额外空间；将优先队列poll出的节点的next offer入队列，就不用人为控制选择哪条链表的节点入队，很巧妙；
@@ -740,7 +745,7 @@ PS:返回空数组`return new int[0]`或者`return new int[]{};`
 
 ### 4. HashMap & ConcurrentHashMap
 
-1. JDK7
+1. JDK7的HashMap
 
 - JDK7中HashMap结构为Hash表（bucket哈希桶）+链表（保存哈希值相同的val），JDK8中当链表长度大于某定值64，链表转化为红黑树，因为当链表过长会严重影响哈希表性能，红黑树可以快速CRUD
 
@@ -775,16 +780,103 @@ PS:返回空数组`return new int[0]`或者`return new int[]{};`
 
   ![deadloop](image/deadloop.png)
 
+- 链表插入put快，但是查找查询get效率低，所以需要改进；key->key.hashcode()，取余或者&，余的是数组长度，并且尽量平均，得到位置索引后，插入数组，插入冲突的节点时会先遍历本index的所有节点，看是否有相同的key，有的话更新value，没有的话将创建新的Entry并插在头部比较快，头插法；不过为什么不在遍历到尾部之后没有相同key时直接插入尾部呢？ 不过两种方法插入时的时间时差不多的 ，如果发生了value替换put方法会返回oldValue，插入新的返回null；当然循环的目的主要是查找是否有相同key的节点，插入操作还是分离到循环之外比较好；
 
-2. JDK8
+- 初始化数组table时，会把初始长度设置为大于等于new时传入的长度的最小的2的幂次数，不传入初始长度参数时，就是16；函数名roundUpToPowerOf2()，判断长度是否是2的幂次的方法是转换为2进制表示并查看是否只有1个bit位上是1；其中调用的是Integer.highestOneBit(int i)这个方法，7中的该方法获得小于等于i的最大2的幂次，以下是jdk8的该方法，7中与此不同，是通过位移得到传入参数的最高位1
 
+  ```java
+      public static int highestOneBit(int i) {
+          return i & (MIN_VALUE >>> numberOfLeadingZeros(i));
+      }
+      @HotSpotIntrinsicCandidate
+      public static int numberOfLeadingZeros(int i) {
+          // HD, Count leading 0's
+          if (i <= 0)
+              return i == 0 ? 32 : 0;
+          int n = 31;
+          if (i >= 1 << 16) { n -= 16; i >>>= 16; }
+          if (i >= 1 <<  8) { n -=  8; i >>>=  8; }
+          if (i >= 1 <<  4) { n -=  4; i >>>=  4; }
+          if (i >= 1 <<  2) { n -=  2; i >>>=  2; }
+          return n - (i >>> 1);
+      }
+  //>>>i，右移i位，左边的高位填0
+  ```
+  
+- key的hash值使用函数hash()获取，在hash函数中，有许多移位操作，原因是为了使高位尽量参与进来，使分布尽量均匀；
 
+- 获取hash值后，通过indexFor函数获取index，与length-1做与操作，所以之前length取了2的幂次，这样-1得到的结果全1；
 
+- put的key==null时，
 
+- put方法中key是可以为null的，会创建Entry(null,value)添加到数组index=0的位置；当然index=0的位置不全是key==null的Entry，所以还是会遍历index=0的链表；
+
+- 扩容：有两个条件，size>=threshold，table[index]!=null，即待插入的位置不为空，第二个条件只在7有，8没有，阈值threshold是cap*loadfactor
+
+- 扩容时，resize(2*oldcap)，如果oldcap已经达到了MAXIMUM_CAPACITY，就不会进行扩容；扩容时的重要函数是transfer(Entry[] beatable,boolean rehash)，jdk8里面没有rehash，将oldtable的元素转移到newtable，主要是两重循环，遍历数组，遍历每个索引出的链表，每个节点调用indexFor重新计算index，插入到新的数组，
+
+- 扩容时的多线程问题：多个线程各自开辟新的数组并循环转移，由于遍历的是同一个数组的数据，就容易出问题；比如线程同时操作造成多个节点的next是对方，死循环，这本质上是一个线程安全问题，所以多线程时需要使用ConcurrentHashMap。
+
+- transfer 的另一个参数boolean rehash，在resize调用transfer时该参数为initHashSeedAsNeeded(newCapacity)，该函数操作的主要变量是hashseed（默认为0）和useAltHashing，后者当newcap>=jdk.map.althashing.threshold（默认值时Integer.MAX_VALUE），所以rehash是否为true在于是否人为设置虚拟机的该参数，当设置jdk.map.althashing.threshold为一定数值时，就可以改变hashseed的值，进而rehash（hash值与hashseed有关）。一般很少使用rehash，默认都是false的。
+
+- 扩容开销比较大，如果需要保存的数据有限，可以设置threshold，使之不扩容
+
+- modCount：修改次数，无论是插入、删除等；其意义在fast-fail一种容错机制，实在运行过程中发现map出现问题了就会直接抛出异常ConcurrentModificationException，主要会出现错误的情况还是多线程场景，一个线程在遍历，另一个线程是修改这个map。使用迭代器就不会因为modCount!=ExpectedMod 抛出这个异常，如果不在意这个错误的话可以使用Iterator。
+2. JDK7的ConcurrentHashMap
+
+- HashTable：使用synchronized保证并发安全。
+- ConcurrentHashMap使用分段锁，有成员变量是Segment[] table;Segment是内部类，Segment类内部有成员变量HashEntry[] tab;HashEntry的结构和HashMap中Entry的结构是一样的，
+- 相比HashMap，初始化参数多了concurrentLevel指的是Segment数组的大小，而initialCapacity指的是整个concurrentHashMap中包含的HashEntry数量，比如concurrentLevel=16，initialCapacity=32，那么每个segment就对应2个HashEntry；
+- 传入的参数concurrentLevel不要求是2的幂次，但是程序仍然会计算得到大于传入的concurrentLevel的最小2的幂次，变量名为ssize，作为segment数组的大小，原因与HashMap取capacity为2的幂次相同；
+- HashEntry数组的大小最小是2；并且该数组的大小也要是2的幂次，大小是大于roundUpPowOf2(initialfcapacity)/roundUpPowOf2(concurrentLevel)的最小的2的幂次，因为要根据key的hash再计算放在segment的那个HashEntry里，
+- ConcurrentHashMap的扩容，是每个segment单独扩容的，当当前segment的size大于初始化该segment设置的阈值时会对该segment进行扩容，其他segment大小不需要变化；而初始化concurrentHashMap后，Segment[]的长度就不会发生变化，扩容只针对每个segment单独进行。
+- 初始化ConcurrentHashMap时会实例化一个Segment s0，存放在Segment[0]，以后其他Segment[i]为null需要实例化时直接以s0为模板。
+- 从性质和功能来看，Segment与HashMap十分接近
+- 解决线程问题的重要类对象sun.misc.Unsafe UNSAFE，当然这个类只能在BootClassLoader加载的类中使用，一般系统类加载器加载的类是无法使用该类的（但是可以通过某些小技巧在一般类中使用）。这个类解决的问题就是线程内存与主内存同一变量的更新问题，主要也是使用原子操作。CAS：CompareAndSwap，将本地内存和主存同一变量比较，只有相同才会操作。
+
+---
+
+msb：hashmap in Java8
+
+1. 初始化长度为2的整数次幂的原因
+
+   - 方便&运算
+   - 方便扩容后rehash移动元素
+
+2. 构造方法体中没有显示创建容器数组？是在put的时候创建。
+
+   第1次put时，table==null，会调用resize，该函数可以初始化或者resize，这里是初始化；
+
+   进入else{}，初始化newCap和newThr，进而赋值threshold=12，在之后获得table，因为oldtable!=null，所以直接返回table；
+
+   之后put的操作，因为table有了，就找到key的hash对应的index，方法是&运算，相当于取模运算，所以之前长度是2的整数次幂，n-1的二进制位全1；因为是第一次放元素，所以得到的p==null，所以new Node放入该index；modCount++；如果++size（总的键值对个数）大于阈值就resize；执行完毕；
+
+   jdk8中的插入链表都是尾插，头插有死循环的问题；
+
+   第2次插入于之前相同的key，进入putVal的else，即该index上有内容了，又因为key相同，因为onlyIfAbsent的值是false（put调用putVal时默认的），所以更新了key读经的value；
+
+   第3次插入不同的key，但是其hash相同的keyvalue，进入putVal的else，因为不是TreeNode，所以进入else，for是个死循环，binCount计数链表长度，超过7就treeifyBin，在这个函数中，先判断table是否超过64，如果没有，扩容即可，不treeify，直接break；出了for之后，e是null，不会进入下一个if；
+
+   resize：oldThr=12，resize后newThr=24；newCap=16*2=32；table=newTab；接下来if是rehash，因为原table有链表，oldTab[j]=null不是必要的，使之为null，一定程度有利于gc；如果j处只有一个节点，直接放在新table即可；如果有多个，这里有一个使用&的巧妙计算，因为后几位都相同，只看新增的高一位即可，如果高1位是0，则得到的index不变，如果是1，index+2^oldCap，方法就是&oldCap，低n位肯定是0，区别就是新增的高1位，loTail和loHead就是新增高1位是0的所有原节点组成的新链表的尾和头；hiTail和hiHead是新增高1位是1的所有原节点组成的新链白哦的尾和头；再将这两条新链表接到新table的相应index。注意因为newCap扩容2倍，原本所有位于相同index的节点rehash的区别就是新增高1位不同，所以肯定能分成2条链表；loHead链表的index不变hiHead的index是原index+oldCap。1.7是头插，于此还有区别。
+
+   ![put](image/jdk8_hashmap_put.jpg)
+
+3. 重要的参数：
+
+   - 默认初始化容量must be pow of 2：16，使用<<的方式，因为位运算效率高
+   - 最大容量：1<<30
+   - 加载因子：0.75f，时空平衡的结果
+   - TREEIFY_THRESHOLD:8，链表长度超过8并且整体节点个数MIN_TREEIFY_CAPACITY超过64就转为红黑树
+   - UNTREEIFY_THRESHOLD:6，树转为链表的阈值6
+   - MIN_TREEIFY_CAPACITY:64，
+
+4. 扰动函数：hash函数中操作key的hash，使更加分散；将高16位移到低位，是为了使hash值更加分散；h>>>16
+
+5. 1.7中的死循环是多线程+头插法造成的，是在，扩容和数据迁移的过程中出现的问题，
 
 ---
 
 ### 5. 其他
 
-#### 5.1 回溯算法
+
 

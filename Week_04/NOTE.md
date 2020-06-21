@@ -273,6 +273,281 @@ DFS和BFS对树或者图这种多分枝的数据结构是通用的，树因为�
 - 位运算，异或
 2. [33. 搜索旋转排序数组](https://leetcode-cn.com/problems/search-in-rotated-sorted-array/)
 
+#### 2.9 5-15
+
+1. [560. 和为K的子数组](https://leetcode-cn.com/problems/subarray-sum-equals-k/)
+- 暴力解法，遍历`O(n^2)`
+
+- 前缀和+hash：关于该方法，自己思考时的疑问是，以index=i时，以其为结尾的前缀数组，其包含的前缀和包含很多个，所以每个位置上都应该再用一个容器保存出现的前缀和。
+
+  实际上，因为找的是子串i~j，只要sum(j)-sum(i)==k即可，要找出的是sum(i)\==sum(j)-k的前缀有几个就可以了
+
+#### 2.10 5-16
+
+1. [25. K 个一组翻转链表](https://leetcode-cn.com/problems/reverse-nodes-in-k-group/)
+- 就是迭代，每3个一组，进行reverse，但是细节问题很多
+
+- 也可以使用递归
+
+  ```java
+  class Solution{
+      public ListNode reverseKGroup(ListNode head, int k) {
+          ListNode dummy=new ListNode(0);
+          dummy.next=head;
+          ListNode pre=dummy;
+          ListNode end=dummy;
+          while(end.next!=null){
+              for(int i=0;i<k && end!=null;i++){
+                  end=end.next;
+              }
+              if(end==null) break;
+              ListNode start=pre.next;
+              ListNode nextstart=end.next;
+              end.next=null;
+              //node是本段反转后的头节点
+              ListNode node=reverse(start);
+              pre.next.next=nextstart;
+              pre.next=node;
+              pre=start;
+              end=start;
+          }
+          return dummy.next;
+      }
+  
+      private ListNode reverse(ListNode head){
+          //递归 1，57.31；  40.2，7.32
+          // if(head==null || head.next==null){
+          //     return head;
+          // }
+          // ListNode node=reverse(head.next);
+          // head.next.next=head;
+          // head.next=null;
+          // return node;
+  
+          //迭代
+          //0,100;  39.7,7.32
+          ListNode pre=null;
+          ListNode cur=head;
+          while(cur!=null){
+              ListNode next=cur.next;
+              cur.next=pre;
+              pre=cur;
+              cur=next;
+          }
+          return pre;
+      }
+  }
+  ```
+
+
+#### 2.11 5-17
+
+1. [210. 课程表 II](https://leetcode-cn.com/problems/course-schedule-ii/)
+- 拓扑排序，与图有关的算法问题，之前没有接触过
+
+- 拓扑排序：将有向无环图转成线性排序
+
+- 基本思路是BFS，层数是每节课依赖的课程数，先将层数为0的节点存入队列，更新依赖该课程的课程的层数，没次迭代将新增加的依赖数为0的课程入队，总的来说，使用的知识点是没有新的，只是BFS思想的另一种使用。
+
+  ```java
+  //本方法适用map保存每节课程依赖的其他课程数，
+  //用list[]保存依赖本节课的其他课程
+  //116,5.96;  41.4,93.33
+  class Solution {
+      public int[] findOrder(int numCourses, int[][] prerequisites) {
+          List<Integer>[] lists=new List[numCourses];
+          //用map保存剩余的课程和其对其他课程的依赖数
+          Map<Integer,Integer> map=new HashMap<>();
+          for(int[] arr:prerequisites){
+              map.put(arr[0],map.getOrDefault(arr[0],0)+1);
+              if(lists[arr[1]]==null){
+                  lists[arr[1]]=new ArrayList<>();
+              }
+              lists[arr[1]].add(arr[0]);
+          }
+          //用queue保存当前依赖数为0的课程
+          Queue<Integer> queue=new ArrayDeque<>();
+          for(int i=0;i<numCourses;i++){
+              if(map.get(i)==null){
+                  queue.add(i);
+              }
+          }
+          int[] res=new int[numCourses]; 
+          int index=0;
+          while(!queue.isEmpty()){
+              int cur=queue.poll();
+              res[index++]=cur;
+              List<Integer> curlist=lists[cur];
+              //更新课程依赖数，将依赖cur课程的课程的依赖数减1
+              if(curlist!=null){
+                  for(int i:curlist){
+                      map.put(i,map.get(i)-1);
+                  }
+              }
+              //将map中新的课程依赖为0的添加到队列
+              Iterator<Integer> it=map.keySet().iterator();
+              while(it.hasNext()){
+                  int i=it.next();
+                  if(map.get(i)==0){
+                      queue.add(i);
+                      it.remove();
+                  }
+              }            
+          }
+          return map.isEmpty()?res:new int[]{};
+      }
+  }
+  ```
+
+
+#### 2.12 5-18
+
+1. [152. 乘积最大子数组](https://leetcode-cn.com/problems/maximum-product-subarray/)
+- 典型解法：动态规划，但是不能仅仅根据dp[i-1]求dp[i]，要做另一重处理
+- 因为最大值可能是由连续正数相乘，也可能由负数相乘，所以要记录每个i处的最小值，以防i+1处为负数，得到更大的结果。
+- 另一种解法是根据负数是偶数个还是奇数个的性质求的最大值，[详见](https://leetcode-cn.com/problems/maximum-product-subarray/solution/xiang-xi-tong-su-de-si-lu-fen-xi-duo-jie-fa-by--36/)
+
+
+
+#### 2.13 5-19
+
+1. [680. 验证回文字符串 Ⅱ](https://leetcode-cn.com/problems/valid-palindrome-ii/)
+- 一开始的想法是，这种跳过一个的措施只能发生一次，而判断是否是回文肯定要使用while，要是将这个措施放在while里，要是控制只进行一次，只能使用一个flag，而这个措施可以左跳也可以右跳，这两个都要执行，也就是左跳和右跳都要单独写个循环判断，想想就觉得很麻烦；
+
+- 题解中有一个很好的办法，突破点是递归，这种方法使用一个单独的函数判断回文串，先判断总串是不是，如果不是，在while中对左跳和右跳分别进行回文判断，因为跳之前都是回文了，所以跳后也是回文，那就可以；并且二者使用了 || 连接，就很好
+
+  ```java
+  		public boolean validPalindrome(String s) {
+          for(int i = 0, j = s.length()-1; i < j ; i++, j--){
+              if(s.charAt(i) != s.charAt(j)){
+                  //分两种情况，一是右边减一，二是左边加一
+                  return isPalindrome(s,i,j-1) || isPalindrome(s, i+1, j);
+              }
+          }
+          return true;
+      }
+  
+      public boolean isPalindrome(String s, int i, int j) {
+          while (i < j) {
+              if (s.charAt(i++) != s.charAt(j--)) {
+                  return false;
+              }
+          }
+          return true;
+      }
+  ```
+
+- 官方题解就是我本身的思路，区别是使用if else取代了flag，的确是好的；如果需要跳就分别左跳和右跳，并且使用|| ，总的来说，私以为上一个题解的做法是最好的。
+
+
+
+#### 2.14 5-20
+
+1. [1371. 每个元音包含偶数次的最长子字符串](https://leetcode-cn.com/problems/find-the-longest-substring-containing-vowels-in-even-counts/)
+- 前缀和
+
+#### 2.15 5-21
+
+1. [5. 最长回文子串](https://leetcode-cn.com/problems/longest-palindromic-substring/)
+- dp：二维，子串[i,j]是否是回文取决于子串[i+1,j-1]是不是。`O(n^2)`
+- 中心扩散，`O(n^2)`
+- 关于「动态规划」方法执行时间慢的说明：
+
+  - 动态规划本质上还是「暴力解法」，因为需要枚举左右边界，有 O(N^2) 这么多；
+  - 以下提供的「中心扩散法」枚举了所有可能的回文子串的中心，有 O(2N) 这么多，不在一个级别上。
+  - 总的来说就是dp要检测的字符串数量多
+- Manacher:了解，以中心扩散为基本点，利用已遍历过的index为中心的子串的信息。
+- [总结](https://leetcode-cn.com/problems/longest-palindromic-substring/solution/zhong-xin-kuo-san-dong-tai-gui-hua-by-liweiwei1419/)
+
+
+
+#### 2.16 5-22
+
+1. [105. 从前序与中序遍历序列构造二叉树](https://leetcode-cn.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/)
+- 之前的作业题，递归就好了
+
+#### 2.17 5-23
+
+1. [76. 最小覆盖子串](https://leetcode-cn.com/problems/minimum-window-substring/)
+- 滑窗
+- [总结](https://leetcode-cn.com/problems/minimum-window-substring/solution/hua-dong-chuang-kou-by-powcai-2/)
+
+#### 2.18 5-24
+
+1. [4. 寻找两个正序数组的中位数](https://leetcode-cn.com/problems/median-of-two-sorted-arrays/)
+- 难点是两个数组虽然各自有序，但是整体无序，要找中位数必须整体有序，但排序需要`(m+n)log(m+n)`的时间复杂度 
+
+- 有一个想法是，像归并排序中合并两个数组一样，找到中位数，时间复杂度`O(m+n)`，还需要额外的空间
+
+- 时间复杂度`O(log(m+n))`的查找就二分了，但是无从下手
+
+- 真的难，二分的细节也没搞明白，虽然总体思路是有的，但细节还是理解不到位
+
+  ```java
+  //中位数，即中间的数，对两个数组时，只要同时分割两个数组，保证左边的所有，小于等于右边的所有
+  //因为两个数组自己原本有序，所以只要保证nums1[i]<=nums2[j+1] && nums2[j] <= nums1[i+1]即可
+  class Solution{
+      public double findMedianSortedArrays(int[] nums1,int[] nums2){
+          //让nums1是较短的那一个
+          if( nums1.length > nums2.length){
+              int[] tmp = nums1;
+              nums1 = nums2;
+              nums2 = tmp;
+          }
+  
+          int len1 = nums1.length;
+          int len2 = nums2.length;
+  
+          //分割的规则是：偶数时，左右相等；奇数时，左边多一个
+          //如何判断分好了呢：因为
+          //考虑了总长度奇偶的情况下，可以将分割线左的总个数表达为
+          // int totalLeft = (len1+len2+1)/2;
+          int totalLeft = len1+(len2-len1+1)/2;  
+  
+          //因为两个数组的左总数一定，所以只分割一个数组；另一个也就确定了
+          //这里分割较短的那一个，因为越短查找起来越快，用二分也是这样
+          int left=0;
+          int right=len1;
+          while( left < right){
+              int mid1=left+(right-left+1)/2;  //mid1是第1个数组分界线右边第1个
+              //用mid2保证，mid2是第2个数组分界线右边第1个，即使用nums1[mid1]与nums2[mid2]比较，
+              int mid2=totalLeft-mid1;
+              if(nums1[mid1-1] > nums2[mid2]){
+                  right=mid1-1;
+              }else{
+                  //因为
+                  left=mid1;
+              }
+          }
+  
+          int i=left;
+          int j=totalLeft-i;
+  
+          //一些特殊情况
+          int nums1LeftMax=(i==0?Integer.MIN_VALUE:nums1[i-1]);
+          int nums1RightMin=(i==len1?Integer.MAX_VALUE:nums1[i]);
+          int nums2LeftMax=(j==0?Integer.MIN_VALUE:nums2[j-1]);
+          int nums2RightMin=(j==len2?Integer.MAX_VALUE:nums2[j]);
+  
+          //返回结果分奇偶
+          if((len1+len2)%2==1){
+              return Math.max(nums1LeftMax,nums2LeftMax);
+          }else{
+              return (double)(Math.max(nums1LeftMax,nums2LeftMax)+Math.min(nums1RightMin,nums2RightMin))/2;
+          }
+      }
+  }
+  ```
+
+
+
+#### 2.19 5-25
+
+1. [146. LRU缓存机制](https://leetcode-cn.com/problems/lru-cache/)
+- 要求put和get都是`O(1)`的时间复杂度，考虑到要移动节点，也需要这个复杂度，并且节点间有先后顺序，所以不能直接用map保存结果，所以需要使用双向链表保存所有节点，节点中的数据包括key和value；查找节点要达到`O(1)`的时间复杂度，最直接的就是使用Hash保存，将节点的key作为map的key，value是节点，这样可以根据key直接找到对应的节点，删除和移到头节点都是`O(1)`复杂度。
+
+
+
 ---
 
 ### 3. 作业算法题

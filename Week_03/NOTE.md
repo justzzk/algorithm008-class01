@@ -1,6 +1,7 @@
 ## 学习笔记 Week03
 
 ---
+[TOC]
 
 ### 1. 基础知识
 
@@ -954,7 +955,10 @@
 3. [200. 岛屿数量](https://leetcode-cn.com/problems/number-of-islands/)：BFS
 #### 2.6 5-2
 
-1. [3. 无重复字符的最长子串](https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/)==待学习==
+1. [3. 无重复字符的最长子串](https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/）
+- 滑窗，每次更新left都要保证不会发生回退；
+- [总结](https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/solution/hua-dong-chuang-kou-by-powcai/)
+- 可不可以使用dp做呢？
 
 2. [15. 三数之和](https://leetcode-cn.com/problems/3sum/)
 - 两数之和的进阶，一点区别是返回元素组合而不是元素索引组合
@@ -1518,6 +1522,7 @@
 5. [47. 全排列 II](https://leetcode-cn.com/problems/permutations-ii/)
 - 相比46题，要额外做的工作是排除由于重复元素增加的重复排列。
 - 首先想到的是使用set进行去重后new 到list中；程序与46一致；33,18.49; 40.8,12.5
+- swap的做法：
 6. [169. 多数元素](https://leetcode-cn.com/problems/majority-element/)：之前做过，可以使用HashMap保存、排序后取中位、Floyd投票、位运算等方法。
 7. [17. 电话号码的字母组合](https://leetcode-cn.com/problems/letter-combinations-of-a-phone-number/)
 - 递归之回溯：使用StringBuilder，因为传递的过程中是对同一个sb的引用，所以使用回溯控制，返回之前的状态；0,100; 38.8,5.17
@@ -1632,3 +1637,202 @@
    ![二分查找](image/二分查找.png)
 
 2. [回溯算法](https://leetcode-cn.com/problems/n-queens/solution/hui-su-suan-fa-xiang-jie-by-labuladong/)
+
+3. 使用二分查找找target的左右边界
+
+   ```java
+   public class Solution {
+       public int[] searchRange(int[] A, int target) {
+           if (A == null || A.length == 0)     return new int[]{-1, -1};
+           int start = firstGreaterOrEqual(A, target);
+           if (start == A.length || A[start] != target) {
+               return new int[]{-1, -1};
+           }
+           int end = firstGreaterOrEqual(A, target + 1);
+           return new int[]{start, A[end] == target? end: end-1};
+       }
+       private int firstGreaterOrEqual(int[] A,int target){
+           int left=0;
+           int right=A.length-1;
+           while(left<right){
+               //退出条件，left==right-1;此时结果只能是[target,target]或者[lastless,targetOrFirstGreater]
+               int mid=left+(right-left)/2;
+               // if(A[mid] == target){
+               //     //存在==，说明存在target
+               //     right=mid;
+               // }else if(A[mid]<target){
+               //     left=mid+1;
+               // }else{
+             	//	
+               //     right=mid;
+               // }
+               //将>=的情况合并
+               if(A[mid] >= target){
+                   //存在==，说明存在target
+                   right=mid;
+               }else{
+                   //A[mid] < target,无论是找target还是firstGreater，此index肯定不是要返回的，直接+1
+                   left=mid+1;
+               }
+           }
+           //与leftBound的区别就是直接返回left，不需要判断是否相等，因为找的是第一个相等或大于的，不一定相等
+           return left;
+       }
+   }
+   
+   class Solution{
+       public int[] searchRange(int[] A, int target) {
+           int left=findLeftBound(A,target);
+           int right=findRightBound(A,target);
+           return new int[]{left,right};
+       }
+   
+       private int findLeftBound(int[] A,int target){
+           if(A==null || A.length==0){
+               return -1;
+           }
+           int left=0;
+           int right=A.length-1;
+           while(left<right){
+               //退出条件时left==right
+               int mid=left+(right-left)/2;
+               if(A[mid]==target){
+                   //因为没有left==right，所以A[mid]==target时,也是更新边界而不是返回
+                   //不能确定这个是不是左边界，但是肯定更新right
+                   right=mid;
+               }else if(A[mid]<target){
+                   left=mid+1;
+               }else{
+                   right=mid-1;
+               }
+           }
+           return A[left]==target?left:-1;
+       }
+   
+       private int findRightBound(int[] A,int target){
+           if(A==null || A.length==0){
+               return -1;
+           }
+           int left=0;
+           int right=A.length-1;
+           while(left<right){
+               //这种mid更新方式可以避免如[1,2],target=1,死循环的问题
+               //原因在于死循环的原因是left==mid，而相等时又一直更新left
+               //如果让left不会==mid，就不会死循环了
+               //这种更新方式用在寻找右边界，常规更新方式用于寻找左边界
+               int mid=left+(right-left)/2+1;
+               if(A[mid]==target){
+                 	//因为不确定mid是不是目标点，有可能是，所以不跳过
+                   left=mid;
+               }else if(A[mid]<target){
+                   left=mid+1;
+               }else{
+                   right=mid-1;
+               }
+           }
+           //A[left]判断也可以
+           return A[right]==target?right:-1;
+       }
+   }
+   ```
+
+
+
+4. 记录一些二分的题目
+
+   1. [33. 搜索旋转排序数组](https://leetcode-cn.com/problems/search-in-rotated-sorted-array/)
+
+      - [4，5，6，7，0，1，2，3]，左半指[4，5，6，7]，右半指[0，1，2，3]；
+
+      - 旋转数组相比一般的升序数组最大的显而易见是分段升序，并且第二段都小于第一段，这是一个重要特征，根据nums[mid]和mid[right]的比较判断mid在左半还是右半；
+
+      - 这个题目是寻找有没有目标值，没有时返回-1，那么while的最后界限就是left==right时判断是不是目标值，所以可以将left\==right，放在while中；若不是目标值，会更新left或right从而不满足while，退出while后返回-1；
+
+      - 二分查找的重点是在nums[mid]!=target后，更新left和right，要以如何更新二者入手，接下来举例说明
+
+        1. nums1=[7，8，0，1，2，3，4，5，6]
+
+        2. nums2=[3，4，5，6，7，8，0，1，2]
+
+           - nums1[mid]=2，此时该更新left还是right？
+
+           - nums2[mid]=7，此时更新left还是right？
+
+             假如target都是8，nums1应该更新right，nums2应该更新left；
+
+             假如target都是1，nums1该更新right，nums2该更新left；
+
+             显然同样是nums[mid]和target关系，当mid在左半还是右半，更新left还是right是不同的；
+
+             所以当nums[mid]!=target时，首先要区分mid在左半还是右半；
+
+             如何区分呢？之前说过，旋转数组的特征之一是左半都大于右半，右半中right是最大的，所以比较nums[mid]和nums[right]即可；这样就区分了是在左半还是右半；
+
+           - 明确了在左半还是右半，接下来应该根据target和nums[mid]的关系，来确定该更新left还是right，该更新哪个，理由很简单，判断target在mid左边还是右边
+
+             接下来以nums1为例，当target=1以及target=8时，更新的都是right；而当target=3时，更新的是left，说明不能简单的以nums[mid]和target的大小关系作为更新标准，那该以什么标准呢？
+
+             回想标准二分，如[0,1,2,3,4,5]，nums[mid]=2，target=4，更新`left=mid+1`的原因是target>nums[mid]，但这个原因产生的结果是让我们知道target在区间[3,4,5]中，所以根本原因是target在该区间中，而不是与nums[mid]的大小关系，我们是借助二者的大小关系确定在哪个区间；
+             
+             回到问题，更新left还是right，实质上是判断target在区间`[left,...,mid-1]`还是`[mid+1,...,right]`，进一步就是通过一定的判断区分这两个区间，就要抓住两个区间的区别
+             
+             以nums1为例，两个区间分别是[7，8，0，1]和[3，4，5，6]，target可以是两个区间中的任意一个数，[3，4，5，6]的特征是`target>nums[mid] && target<=nums[right]`或者`target>nums[mid] && target<nums[left]`；[7，8，0，1]的特征是`target<nums[mid] || target > nums[right]`或者`target<nums[mid] || target >= nums[left]`，之所以会有两个，是因为nums[left]和nums[right]原本是相邻的。
+             
+             ```java
+             //这里将前者写在if
+             else if(nums[mid] <= nums[right]){
+               if(nums[mid] < target && target <= nums[right]){
+                 left = mid+1;
+               }else{
+                 right = mid-1;
+               }
+             }
+             ```
+             
+             同理对nums2，更新left还是right也是区分两个区间，[3，4，5，6]的特征是`target<nums[mid] && target>nums[right]`或者`target<nums[mid] && target>=nums[left]`  ，  [8，0，1，2]的特征是`target>nums[mid] || target<=nums[right]`或`target>nums[mid] || target<nums[left]`。
+             
+           - 明确了更新left还是right，二分基本也就写好了。
+           
+          ```java
+             public int search(int[] nums, int target) {
+               if(nums==null || nums.length==0) return -1;
+               int left=0;
+               int right=nums.length-1;
+               while(left <= right){
+                 int mid=left+(right-left)/2;
+                 if(nums[mid]==target){
+                   return mid;
+                 }else if(nums[mid] <= nums[right]){
+                   //右半
+                   if(nums[mid] < target && target <= nums[right]){
+                     left = mid+1;
+                   }else{
+                     right = mid-1;
+                   }
+                 }else{
+                   //左半
+                   if(nums[mid] > target && target >= nums[left]){
+                     right = mid-1; 
+                   }else{
+                     left = mid+1;
+                   }
+                 }
+               }
+               return -1;
+             }
+          ```
+        
+           - 以上说的都是总区间不是单调的，当随着迭代，区间一定会缩减成单调的，这个时候一定有`nums[mid] <= nums[right]`，就是普通的二分查找更新left和right了。
+        
+           总结一下，二分的重点就是通过区分两个区间来更新left和right；是否要+-1要根据mid是否有可能是解，是的话就要保留，不能+-1；while是否有left==right，要根据是否查找一个给定值target，是的话保留\==。
+        
+           
+        
+        ​     
+        
+   
+5. 使用了前缀和的题目：可以使用前缀和的原因是，要求某个子区间[i,j]，子区间的某个性质可以通过[0,j]-[0,i]得到
+
+   1. [1248. 统计「优美子数组」](https://leetcode-cn.com/problems/count-number-of-nice-subarrays/)
+   2. [1371. 每个元音包含偶数次的最长子字符串](https://leetcode-cn.com/problems/find-the-longest-substring-containing-vowels-in-even-counts/)
+   3. [560. 和为K的子数组](https://leetcode-cn.com/problems/subarray-sum-equals-k/)

@@ -1,4 +1,4 @@
-# week05学习笔记
+# week06学习笔记
 
 [TOC]
 
@@ -32,7 +32,7 @@
 
 8.  三步：子问题、保存中间结果、递推
 
-#### 4. 相关题目
+#### 2. 相关题目
 
 1. [509. 斐波那契数](https://leetcode-cn.com/problems/fibonacci-number/)
   
@@ -124,6 +124,10 @@
 15. [309. 最佳买卖股票时机含冷冻期](https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock-with-cooldown/)
 16. [188. 买卖股票的最佳时机 IV](https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock-iv/)
 17. [714. 买卖股票的最佳时机含手续费](https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/)
+18. [22. 括号生成](https://leetcode-cn.com/problems/generate-parentheses/)
+- 这道题的dp和下面两道差不多
+19. [96. 不同的二叉搜索树](https://leetcode-cn.com/problems/unique-binary-search-trees/)
+20. [95. 不同的二叉搜索树 II](https://leetcode-cn.com/problems/unique-binary-search-trees-ii/)
 
 ---
 
@@ -470,8 +474,69 @@
 - 这个题也是比较经典的dp问题，相比[62. 不同路径](https://leetcode-cn.com/problems/unique-paths/)，多了一个左上的方向，另外如果当前位置两者不同，还要+1，代表在此前左、左上、上3个方向上已经相同的串再处理这个不同的1位；
 4. [91. 解码方法](https://leetcode-cn.com/problems/decode-ways/)
 - 最容易想到的是递归，或者优化的递归
+
 - 使用dp的话，可以自底向上，从后往前迭代，每个位置可能有两种情况，第一种就是本位置就是一个解码，第二种是本位置和后一位组成的2位数是一种方案，这两种方案的和就是总的方案数，
+
 - 其实dp优化后也可以只使用2个变量，求dp[i]只需要dp[i+1]和dp[i+2]即可；
+
+  ```java
+  //经典dp
+  //1,100;   37.8,7.69
+  class Solution {
+      public int numDecodings(String s) {
+          char[] nums = s.toCharArray();
+          int len = nums.length;
+          int[] dp = new int[len+1];  // dp[i] 表示从第i+1个数到第n个数的所有方案数
+          dp[len] = 1;
+          dp[len-1]=s.charAt(len-1)=='0'?0:1;
+          // 从右往左
+          for(int i = len-2; i >= 0; i--) {
+              // 注意判断0字符
+              // 当开始位为0字符时不满足任意一个字母的解析，跳过，dp[i]=0;
+              if (nums[i] == '0') continue;   
+              int num = 0;
+              //已经跳过i为0的情况了，所以直接计算前两位是否小于等于26即可
+              if((nums[i]-'0')*10+(nums[i+1]-'0') <= 26) dp[i]=dp[i+1]+dp[i+2];
+              else dp[i]=dp[i+1];
+          }
+          return dp[0];
+      }
+  }
+  
+  //常数空间dp
+  //使用2个变量的递归
+  //1ms,100;   37.5,7.69
+  class Solution{
+      public int numDecodings(String s) {
+          int len = s.length();
+          int end = 1;
+          int cur = 0;
+          if (s.charAt(len - 1) != '0') {
+              cur = 1;
+          }
+          for (int i = len - 2; i >= 0; i--) {
+              if (s.charAt(i) == '0') {
+                  end = cur;//end 前移
+                  cur = 0;
+                  continue;
+              }
+              int ans1 = cur;
+              int ans2 = 0;
+              int ten = (s.charAt(i) - '0') * 10;
+              int one = s.charAt(i + 1) - '0';
+              if (ten + one <= 26) {
+                  ans2 = end;
+              }
+              end = cur; //end 前移
+              cur = ans1 + ans2;
+          }
+          return cur;
+      }
+  }
+  
+  ```
+
+  
 5. [221. 最大正方形](https://leetcode-cn.com/problems/maximal-square/) ->[每日一题1](#2.5 5-30)
 6. [363. 矩形区域不超过 K 的最大数值和](https://leetcode-cn.com/problems/max-sum-of-rectangle-no-larger-than-k/)
 - 暴力：直观的做法是，枚举所有的矩形，并在这个过程中更新ans；因为要确定4个角所以要有4层for循环，时间复杂度`O(m^2 n^2)`
@@ -501,6 +566,7 @@
 ### 5. Other Tips
 
 1. [快慢指针总结](https://leetcode-cn.com/problems/find-the-duplicate-number/solution/qian-duan-ling-hun-hua-shi-tu-jie-kuai-man-zhi-z-3/)
+
 2. ![递归模版](image/递归.png)
 
 3. 走迷宫
@@ -510,3 +576,49 @@
 4. 从BAACBA到ABCABA的方法。==待解决==
 
 5. 如何统计一个字符串中出现次数最多的字符？如果不止一个，如何统计出有几个同样最多的字符？
+
+
+
+---
+
+随记
+
+1. dp3要素：
+
+   重复子问题用mem保存；
+
+   最优子结构，可分解为互相独立的子问题，从最优子结构推出更大规模问题的最优结果；
+
+   状态转移方程（“明确「状态」 -> 定义 dp 数组/函数的含义 -> 明确「选择」-> 明确 base case”
+
+   摘录来自: abuladong. “labuladong的算法小抄。” ）
+
+2. dp：自底向上
+
+3. “最优子结构」是某些问题的一种特定性质，并不是动态规划问题专有的。也就是说，很多问题其实都具有最优子结构，只是其中大部分不具有重叠子问题，所以我们不把它们归为动态规划系列问题而已。”
+
+   摘录来自: abuladong. “labuladong的算法小抄。” 
+
+4. “遇到这种最优子结构失效情况，怎么办？策略是：改造问题。”
+
+   摘录来自: abuladong. “labuladong的算法小抄。” iBooks. 
+
+5. “解决两个字符串的动态规划问题，一般都是用两个指针 i,j 分别指向两个字符串的最后，然后一步步往前走，缩小问题的规模。”
+
+   摘录来自: abuladong. “labuladong的算法小抄。” iBooks. 
+
+   可以理解为从后往前走过的子串都已经变得相同了，剩下的是还没有处理的前半部分子串，所以问题规模缩小了，这种是自顶向下，从完整的字符串入手，适合使用memory减少时间；
+
+6. “动态规划算法的时间复杂度就是子问题个数 × 函数本身的复杂度。
+
+   函数本身的复杂度就是忽略递归部分的复杂度，子问题个数也就是不同状态组合的总数，”
+
+   摘录来自: abuladong. “labuladong的算法小抄。” iBooks. 
+
+7. 最长回文子串：dp[i,j]，因为是同一个字符串，所以肯定不是从头开始，不然怎么会用两个参数呢。指的是从i到j的子串，是否是回文串，是的话更新长度
+
+8. 重叠子问题：如何判断求解过程中存在重叠子问题从而使用dp?可以使用dp的一般也可以使用备忘录，两者在某种程度上是等价的；
+
+   重叠子问题，求解当前值时，需要多个参数，每个参数都是同一个问题，只是当前实参不同，这时一般是重叠子问题，因为在迭代的过程中，实参是可能有重叠的；
+
+   
