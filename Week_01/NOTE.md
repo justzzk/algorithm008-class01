@@ -126,6 +126,7 @@
 - 删除光标右边的内容：fn+delete
 - 批量修改变量名replace：command+r 或 fn+shift+f6
 - macOS返回上级文件夹：command+方向键上，进入文件夹，command+o或者方向键下
+- 查看类的继承关系：command+option+u
 
 
 
